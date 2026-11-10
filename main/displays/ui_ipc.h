@@ -18,9 +18,10 @@ typedef struct
     uint32_t param; // e.g., max_px or timeout
 } ui_msg_t;
 
-#define UI_NOTIFY_TITLE_LEN 32
-#define UI_NOTIFY_KEY_LEN   24
-#define UI_NOTIFY_BODY_LEN  160
+// buffer sizes in bytes; accented characters take two
+#define UI_NOTIFY_TITLE_LEN 48
+#define UI_NOTIFY_KEY_LEN   32
+#define UI_NOTIFY_BODY_LEN  240
 #define UI_NOTIFY_DEFAULT_MS 30000
 #define UI_NOTIFY_MIN_MS     1000
 #define UI_NOTIFY_MAX_MS     600000
@@ -39,5 +40,5 @@ void ui_ipc_init(void);
 bool ui_send_show_qr();
 bool ui_send_hide_qr();
 bool ui_send_identify(uint32_t duration_ms);  // 0 = use default (60s)
-// strings are UTF-8 and may be NULL; they are copied, truncated and reduced to ASCII. 0 = default duration (30s)
+// strings are UTF-8 and may be NULL; they are copied, truncated and reduced to ASCII + Latin-1. 0 = default duration (30s)
 bool ui_send_notification(const char *title, const char *key, const char *body, uint32_t duration_ms);

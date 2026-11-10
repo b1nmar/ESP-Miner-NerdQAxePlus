@@ -744,38 +744,121 @@ void UI::globalStatsScreenInit(void)
     lv_obj_add_event_cb(ui_GlobalStats, on_screen_loaded, LV_EVENT_SCREEN_LOADED, m_display);
 
 }
-void UI::showNotificationScreen(const char *title, const char *key, const char *body) {
+// --- notification screen -----------------------------------------------------
+// Brand colours. The logo colour is baked into the image and never recoloured.
+#define NOTIFY_COLOR_BG     0x0C3039
+#define NOTIFY_COLOR_ACCENT 0xFB5F40
+#define NOTIFY_COLOR_KEY    0xFFFFFF
+#define NOTIFY_COLOR_BODY   0xD6E2E4
+
+// logo geometry: the image is 112x106 and is zoomed/rotated around its centre
+#define NOTIFY_LOGO_W 112
+#define NOTIFY_LOGO_H 106
+#define NOTIFY_LOGO_ZOOM_START 102 // 40 %
+#define NOTIFY_LOGO_ZOOM_FULL  256 // 100 %
+#define NOTIFY_LOGO_ZOOM_SMALL 66  // 26 % -> 29 px wide
+// top-left of the unscaled image for the two rest positions
+#define NOTIFY_LOGO_X_CENTER ((320 - NOTIFY_LOGO_W) / 2)
+#define NOTIFY_LOGO_Y_CENTER ((170 - NOTIFY_LOGO_H) / 2)
+#define NOTIFY_LOGO_X_CORNER (295 - NOTIFY_LOGO_W / 2)
+#define NOTIFY_LOGO_Y_CORNER (22 - NOTIFY_LOGO_H / 2)
+
+// intro timeline in ms
+#define NOTIFY_T_SPIN_END   900
+#define NOTIFY_T_MOVE_START 1100
+#define NOTIFY_T_TEXT_START 1250
+#define NOTIFY_T_END        1600
+#define NOTIFY_T_DELAY      (UI_NOTIFY_INTRO_MS - NOTIFY_T_END)
+
+static void notify_intro_anim_cb(void *var, int32_t v)
+{
+    static_cast<UI *>(var)->notifyIntroStep(v);
+}
+
+// Position everything for the time t of the intro. t >= NOTIFY_T_END is the final layout.
+void UI::notifyIntroStep(int32_t t)
+{
+    if (!ui_notifyScreen) {
+        return;
+    }
+
+    int32_t angle = 0;
+    int32_t zoom = NOTIFY_LOGO_ZOOM_FULL;
+    int32_t x = NOTIFY_LOGO_X_CENTER;
+    int32_t y = NOTIFY_LOGO_Y_CENTER;
+
+    if (t < NOTIFY_T_SPIN_END) {
+        // grow while doing one full turn, slowing down at the end (ease out cubic)
+        float p = 1.0f - (float) t / NOTIFY_T_SPIN_END;
+        float e = 1.0f - p * p * p;
+        angle = (int32_t) (3600.0f * e) % 3600;
+        zoom = NOTIFY_LOGO_ZOOM_START + (int32_t) ((NOTIFY_LOGO_ZOOM_FULL - NOTIFY_LOGO_ZOOM_START) * e);
+    } else if (t >= NOTIFY_T_MOVE_START) {
+        // shrink into the top right corner (smoothstep)
+        float p = (float) (t - NOTIFY_T_MOVE_START) / (NOTIFY_T_END - NOTIFY_T_MOVE_START);
+        if (p > 1.0f) {
+            p = 1.0f;
+        }
+        float e = p * p * (3.0f - 2.0f * p);
+        zoom = NOTIFY_LOGO_ZOOM_FULL + (int32_t) ((NOTIFY_LOGO_ZOOM_SMALL - NOTIFY_LOGO_ZOOM_FULL) * e);
+        x = NOTIFY_LOGO_X_CENTER + (int32_t) ((NOTIFY_LOGO_X_CORNER - NOTIFY_LOGO_X_CENTER) * e);
+        y = NOTIFY_LOGO_Y_CENTER + (int32_t) ((NOTIFY_LOGO_Y_CORNER - NOTIFY_LOGO_Y_CENTER) * e);
+    }
+
+    lv_opa_t text_opa = LV_OPA_TRANSP;
+    if (t >= NOTIFY_T_END) {
+        text_opa = LV_OPA_COVER;
+    } else if (t > NOTIFY_T_TEXT_START) {
+        text_opa = (lv_opa_t) (255 * (t - NOTIFY_T_TEXT_START) / (NOTIFY_T_END - NOTIFY_T_TEXT_START));
+    }
+
+    lv_img_set_angle(ui_imgNotifyLogo, angle);
+    lv_img_set_zoom(ui_imgNotifyLogo, zoom);
+    lv_obj_set_pos(ui_imgNotifyLogo, x, y);
+    lv_obj_set_style_text_opa(ui_lblNotifyTitle, text_opa, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_lblNotifyKey, text_opa, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_lblNotifyBody, text_opa, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+void UI::showNotificationScreen(const char *title, const char *key, const char *body, bool with_intro) {
     // create once, afterwards only the texts are replaced
     if (!ui_notifyScreen) {
         ui_notifyScreen = lv_obj_create(NULL);
         lv_obj_clear_flag(ui_notifyScreen, LV_OBJ_FLAG_SCROLLABLE);
-        lv_obj_set_style_bg_color(ui_notifyScreen, lv_color_hex(0x000000), LV_PART_MAIN);
+        lv_obj_set_style_bg_color(ui_notifyScreen, lv_color_hex(NOTIFY_COLOR_BG), LV_PART_MAIN);
         lv_obj_set_style_bg_opa(ui_notifyScreen, 255, LV_PART_MAIN);
 
-        // these fonts cover the printable ASCII range (0x20-0x7e)
+        // the title leaves room for the logo in the top right corner
         ui_lblNotifyTitle = lv_label_create(ui_notifyScreen);
-        lv_obj_set_width(ui_lblNotifyTitle, 300);
+        lv_obj_set_width(ui_lblNotifyTitle, 262);
         lv_label_set_long_mode(ui_lblNotifyTitle, LV_LABEL_LONG_DOT);
-        lv_obj_set_height(ui_lblNotifyTitle, 18);
-        lv_obj_set_style_text_font(ui_lblNotifyTitle, &ui_font_OpenSansBold14, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_color(ui_lblNotifyTitle, lv_color_hex(0xFFB000), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_height(ui_lblNotifyTitle, 16);
+        lv_obj_set_style_text_font(ui_lblNotifyTitle, &ui_font_SpaceGrotesk14, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(ui_lblNotifyTitle, lv_color_hex(NOTIFY_COLOR_ACCENT), LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_align(ui_lblNotifyTitle, LV_ALIGN_TOP_LEFT, 10, 8);
 
         ui_lblNotifyKey = lv_label_create(ui_notifyScreen);
         lv_obj_set_width(ui_lblNotifyKey, 300);
         lv_label_set_long_mode(ui_lblNotifyKey, LV_LABEL_LONG_DOT);
-        lv_obj_set_height(ui_lblNotifyKey, 32);
-        lv_obj_set_style_text_font(ui_lblNotifyKey, &ui_font_OpenSansBold24, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_color(ui_lblNotifyKey, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_align(ui_lblNotifyKey, LV_ALIGN_TOP_LEFT, 10, 30);
+        lv_obj_set_height(ui_lblNotifyKey, 34);
+        lv_obj_set_style_text_font(ui_lblNotifyKey, &ui_font_SpaceGrotesk28, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(ui_lblNotifyKey, lv_color_hex(NOTIFY_COLOR_KEY), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_align(ui_lblNotifyKey, LV_ALIGN_TOP_LEFT, 10, 28);
 
+        // four lines of 20 px
         ui_lblNotifyBody = lv_label_create(ui_notifyScreen);
         lv_obj_set_width(ui_lblNotifyBody, 300);
         lv_label_set_long_mode(ui_lblNotifyBody, LV_LABEL_LONG_DOT);
-        lv_obj_set_height(ui_lblNotifyBody, 88);
-        lv_obj_set_style_text_font(ui_lblNotifyBody, &ui_font_OpenSansBold14, LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_text_color(ui_lblNotifyBody, lv_color_hex(0xD0D0D0), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_height(ui_lblNotifyBody, 80);
+        lv_obj_set_style_text_font(ui_lblNotifyBody, &ui_font_SpaceGrotesk16, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(ui_lblNotifyBody, lv_color_hex(NOTIFY_COLOR_BODY), LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_align(ui_lblNotifyBody, LV_ALIGN_TOP_LEFT, 10, 72);
+
+        // created last so it is drawn above the labels while it travels
+        ui_imgNotifyLogo = lv_img_create(ui_notifyScreen);
+        lv_img_set_src(ui_imgNotifyLogo, &ui_img_latinia_png);
+        lv_img_set_antialias(ui_imgNotifyLogo, true);
+        lv_obj_clear_flag(ui_imgNotifyLogo, LV_OBJ_FLAG_SCROLLABLE);
 
         lv_obj_add_event_cb(ui_notifyScreen, on_screen_loaded, LV_EVENT_SCREEN_LOADED, m_display);
     }
@@ -783,6 +866,25 @@ void UI::showNotificationScreen(const char *title, const char *key, const char *
     lv_label_set_text(ui_lblNotifyTitle, title ? title : "");
     lv_label_set_text(ui_lblNotifyKey, key ? key : "");
     lv_label_set_text(ui_lblNotifyBody, body ? body : "");
+
+    lv_anim_del(this, notify_intro_anim_cb);
+    if (!with_intro) {
+        notifyIntroStep(NOTIFY_T_END);
+        return;
+    }
+
+    // one animation drives the whole timeline; LVGL only allows a single running
+    // animation per property, so the phases cannot be queued as separate animations
+    notifyIntroStep(0);
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, this);
+    lv_anim_set_exec_cb(&a, notify_intro_anim_cb);
+    lv_anim_set_values(&a, 0, NOTIFY_T_END);
+    lv_anim_set_time(&a, NOTIFY_T_END);
+    lv_anim_set_delay(&a, NOTIFY_T_DELAY);
+    lv_anim_set_path_cb(&a, lv_anim_path_linear);
+    lv_anim_start(&a);
 }
 
 void UI::createQRScreen(uint8_t *buf, int size) {

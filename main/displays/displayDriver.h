@@ -101,6 +101,7 @@ class DisplayDriver {
     uint32_t m_identifyDuration_ms = 60000;
     uint32_t m_notifyDuration_ms = 30000;
     bool m_notifyWasOff = false; // display was off when the notification arrived
+    uint32_t m_notifyIntro_ms = 0; // intro animation time added to the duration
     char m_portalWifiName[30];  // WiFi name displayed on the portal screen
 
     // cache settings to not hammer the NVS

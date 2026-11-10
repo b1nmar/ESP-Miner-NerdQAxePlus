@@ -486,7 +486,8 @@ void DisplayDriver::updateState(int64_t now, bool btn1Press, bool btn2Press, boo
         break;
     case UiState::Notification:
     {
-        const bool timeout = (uint32_t) ms >= m_notifyDuration_ms;
+        // the duration counts from the moment the text is readable
+        const bool timeout = (uint32_t) ms >= m_notifyDuration_ms + m_notifyIntro_ms;
         if (btn2Press || (timeout && m_notifyWasOff && !btn1Press)) {
             // btn2 dismisses into a dark display; a timeout restores the display
             // to what it was before the notification. The mining screen is never shown.
@@ -666,8 +667,11 @@ void DisplayDriver::handleUiQueueMessages(ui_msg_t &msg, int64_t tnow)
                 break;
             }
             {
+                // the intro only plays when the notification screen is not visible yet
+                const bool intro = m_state != UiState::Notification;
                 PThreadGuard lock(m_lvglMutex);
-                m_ui->showNotificationScreen(n->title, n->key, n->body);
+                m_ui->showNotificationScreen(n->title, n->key, n->body, intro);
+                m_notifyIntro_ms = intro ? UI_NOTIFY_INTRO_MS : 0;
             }
             if (!m_ui->ui_notifyScreen) {
                 break;

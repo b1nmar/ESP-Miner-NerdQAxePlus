@@ -10,6 +10,7 @@ LV_IMG_DECLARE(ui_img_safe_png);
 LV_IMG_DECLARE(ui_img_eth_png);
 LV_IMG_DECLARE(ui_img_can_png);
 LV_IMG_DECLARE(ui_img_wifi_png);
+LV_IMG_DECLARE(ui_img_latinia_png);     // notification screen
 
 #define LV_FONT_CUSTOM_DECLARE
 LV_FONT_DECLARE(ui_font_DigitalNumbers16);
@@ -20,6 +21,13 @@ LV_FONT_DECLARE(ui_font_OpenSansBold45);
 LV_FONT_DECLARE(ui_font_OpenSansBold24);
 LV_FONT_DECLARE(ui_font_vt323_35);
 LV_FONT_DECLARE(ui_font_vt323_21);
+// notification screen, ASCII + Latin-1
+LV_FONT_DECLARE(ui_font_SpaceGrotesk14);
+LV_FONT_DECLARE(ui_font_SpaceGrotesk16);
+LV_FONT_DECLARE(ui_font_SpaceGrotesk28);
+
+// duration of the notification intro animation, including its start delay
+#define UI_NOTIFY_INTRO_MS 1850
 
 #define TDISPLAYS3_LVGL_TICK_PERIOD_MS 30
 
@@ -87,6 +95,7 @@ protected:
     lv_obj_t *ui_lblNotifyTitle = nullptr;
     lv_obj_t *ui_lblNotifyKey = nullptr;
     lv_obj_t *ui_lblNotifyBody = nullptr;
+    lv_obj_t *ui_imgNotifyLogo = nullptr;
     lv_obj_t *ui_PowerOffScreen = nullptr;
     lv_obj_t* ui_imgNet = nullptr;
 
@@ -111,7 +120,9 @@ protected:
     void destroyQRScreen();
 
     // generic text notification
-    void showNotificationScreen(const char *title, const char *key, const char *body);
+    // with_intro plays the logo animation before the text appears
+    void showNotificationScreen(const char *title, const char *key, const char *body, bool with_intro);
+    void notifyIntroStep(int32_t t_ms);
 
     // Generic theme overlays (device name, credits, donation QR)
     lv_color_t* m_splash_qr_buf = nullptr;
