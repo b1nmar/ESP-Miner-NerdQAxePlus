@@ -752,12 +752,12 @@ void UI::showNotificationScreen(const char *title, const char *key, const char *
         lv_obj_set_style_bg_color(ui_notifyScreen, lv_color_hex(0x000000), LV_PART_MAIN);
         lv_obj_set_style_bg_opa(ui_notifyScreen, 255, LV_PART_MAIN);
 
-        // built-in montserrat fonts: they cover the whole printable ASCII range
+        // these fonts cover the printable ASCII range (0x20-0x7e)
         ui_lblNotifyTitle = lv_label_create(ui_notifyScreen);
         lv_obj_set_width(ui_lblNotifyTitle, 300);
         lv_label_set_long_mode(ui_lblNotifyTitle, LV_LABEL_LONG_DOT);
         lv_obj_set_height(ui_lblNotifyTitle, 18);
-        lv_obj_set_style_text_font(ui_lblNotifyTitle, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_lblNotifyTitle, &ui_font_OpenSansBold14, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_color(ui_lblNotifyTitle, lv_color_hex(0xFFB000), LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_align(ui_lblNotifyTitle, LV_ALIGN_TOP_LEFT, 10, 8);
 
@@ -765,7 +765,7 @@ void UI::showNotificationScreen(const char *title, const char *key, const char *
         lv_obj_set_width(ui_lblNotifyKey, 300);
         lv_label_set_long_mode(ui_lblNotifyKey, LV_LABEL_LONG_DOT);
         lv_obj_set_height(ui_lblNotifyKey, 32);
-        lv_obj_set_style_text_font(ui_lblNotifyKey, &lv_font_montserrat_28, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_lblNotifyKey, &ui_font_OpenSansBold24, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_color(ui_lblNotifyKey, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_align(ui_lblNotifyKey, LV_ALIGN_TOP_LEFT, 10, 30);
 
@@ -773,7 +773,7 @@ void UI::showNotificationScreen(const char *title, const char *key, const char *
         lv_obj_set_width(ui_lblNotifyBody, 300);
         lv_label_set_long_mode(ui_lblNotifyBody, LV_LABEL_LONG_DOT);
         lv_obj_set_height(ui_lblNotifyBody, 88);
-        lv_obj_set_style_text_font(ui_lblNotifyBody, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_font(ui_lblNotifyBody, &ui_font_OpenSansBold14, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_text_color(ui_lblNotifyBody, lv_color_hex(0xD0D0D0), LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_align(ui_lblNotifyBody, LV_ALIGN_TOP_LEFT, 10, 72);
 
