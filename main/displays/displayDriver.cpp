@@ -477,7 +477,6 @@ void DisplayDriver::updateState(int64_t now, bool btn1Press, bool btn2Press, boo
         break;
     case UiState::Notification:
         if (btn1Press || btn2Press || (uint32_t) ms >= m_notifyDuration_ms) {
-            m_isActiveOverlay = false;
             // restart the auto screen-off timer so the mining screen stays visible for a moment
             m_lastKeypressTime = now;
             enterState(UiState::Mining, now);
@@ -657,7 +656,6 @@ void DisplayDriver::handleUiQueueMessages(ui_msg_t &msg, int64_t tnow)
                 break;
             }
             m_notifyDuration_ms = msg.param;
-            m_isActiveOverlay = true;
             // a notification that replaces a visible one only restarts the timer
             m_stateStart_us = tnow;
             enterState(UiState::Notification, tnow);
@@ -673,7 +671,9 @@ void DisplayDriver::handleUiQueueMessages(ui_msg_t &msg, int64_t tnow)
 
 void DisplayDriver::handleAutoOffAndOverlays()
 {
-    if (m_isActiveOverlay) {
+    // m_isActiveOverlay is shared with the error and found-block overlays and gets
+    // cleared by them, so a visible notification is tracked by its state instead
+    if (m_isActiveOverlay || m_state == UiState::Notification) {
         displayTurnOn();
     } else if (m_isAutoScreenOffEnabled) {
         checkAutoTurnOffScreen();
