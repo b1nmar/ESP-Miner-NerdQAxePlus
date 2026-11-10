@@ -100,6 +100,7 @@ class DisplayDriver {
     bool m_isActiveOverlay;     // flag if we have an overlay. LED light is forced to be on
     uint32_t m_identifyDuration_ms = 60000;
     uint32_t m_notifyDuration_ms = 30000;
+    bool m_notifyWasOff = false; // display was off when the notification arrived
     char m_portalWifiName[30];  // WiFi name displayed on the portal screen
 
     // cache settings to not hammer the NVS

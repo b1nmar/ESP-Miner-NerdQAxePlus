@@ -41,6 +41,9 @@ static const char *TAG = "TDisplayS3";
 #endif
 
 // small helpers
+// time LVGL gets to draw a notification before the backlight is switched on
+#define NOTIFY_BACKLIGHT_DELAY_MS 200
+
 static inline int64_t now_us() { return esp_timer_get_time(); }
 static inline int32_t elapsed_ms(int64_t start_us, int64_t now) {
     return static_cast<int32_t>((now - start_us) / 1000);
@@ -370,7 +373,13 @@ bool DisplayDriver::enterState(UiState s, int64_t now)
     case UiState::Notification:
         ESP_LOGI(TAG, "enter state notification (%lums)", m_notifyDuration_ms);
         enableLvglAnimations(true);
-        safe_screen_change(m_ui->ui_notifyScreen, LV_SCR_LOAD_ANIM_FADE_ON, 300, 0);
+        if (m_displayIsOn) {
+            safe_screen_change(m_ui->ui_notifyScreen, LV_SCR_LOAD_ANIM_FADE_ON, 300, 0);
+        } else {
+            // display is dark: switch instantly, the backlight follows once the screen is drawn
+            safe_screen_change(m_ui->ui_notifyScreen, LV_SCR_LOAD_ANIM_NONE, 0, 0);
+            m_screenAnimationRunning = false;
+        }
         break;
     case UiState::PowerOff:
         if (!m_ui->ui_PowerOffScreen) {
@@ -476,12 +485,20 @@ void DisplayDriver::updateState(int64_t now, bool btn1Press, bool btn2Press, boo
         }
         break;
     case UiState::Notification:
-        if (btn1Press || btn2Press || (uint32_t) ms >= m_notifyDuration_ms) {
+    {
+        const bool timeout = (uint32_t) ms >= m_notifyDuration_ms;
+        if (btn2Press || (timeout && m_notifyWasOff && !btn1Press)) {
+            // btn2 dismisses into a dark display; a timeout restores the display
+            // to what it was before the notification. The mining screen is never shown.
+            displayTurnOff();
+            enterState(UiState::Mining, now);
+        } else if (btn1Press || timeout) {
             // restart the auto screen-off timer so the mining screen stays visible for a moment
             m_lastKeypressTime = now;
             enterState(UiState::Mining, now);
         }
         break;
+    }
     case UiState::PowerOff:
         // NOP
         break;
@@ -656,6 +673,10 @@ void DisplayDriver::handleUiQueueMessages(ui_msg_t &msg, int64_t tnow)
                 break;
             }
             m_notifyDuration_ms = msg.param;
+            if (m_state != UiState::Notification) {
+                // remember it, to go dark again afterwards
+                m_notifyWasOff = !m_displayIsOn;
+            }
             // a notification that replaces a visible one only restarts the timer
             m_stateStart_us = tnow;
             enterState(UiState::Notification, tnow);
@@ -673,7 +694,13 @@ void DisplayDriver::handleAutoOffAndOverlays()
 {
     // m_isActiveOverlay is shared with the error and found-block overlays and gets
     // cleared by them, so a visible notification is tracked by its state instead
-    if (m_isActiveOverlay || m_state == UiState::Notification) {
+    if (m_state == UiState::Notification) {
+        // give LVGL time to draw the notification before the backlight comes on,
+        // otherwise the previous screen flashes up for a moment
+        if (m_isActiveOverlay || elapsed_ms(m_stateStart_us, now_us()) >= NOTIFY_BACKLIGHT_DELAY_MS) {
+            displayTurnOn();
+        }
+    } else if (m_isActiveOverlay) {
         displayTurnOn();
     } else if (m_isAutoScreenOffEnabled) {
         checkAutoTurnOffScreen();
