@@ -83,6 +83,7 @@ class DisplayDriver {
         GlobalStats,
         ShowQR,
         Identify,
+        Notification,
         PowerOff,
         NOP
     };
@@ -98,6 +99,7 @@ class DisplayDriver {
     int m_nextScreen;           // The next screen to display
     bool m_isActiveOverlay;     // flag if we have an overlay. LED light is forced to be on
     uint32_t m_identifyDuration_ms = 60000;
+    uint32_t m_notifyDuration_ms = 30000;
     char m_portalWifiName[30];  // WiFi name displayed on the portal screen
 
     // cache settings to not hammer the NVS

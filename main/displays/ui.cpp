@@ -744,6 +744,47 @@ void UI::globalStatsScreenInit(void)
     lv_obj_add_event_cb(ui_GlobalStats, on_screen_loaded, LV_EVENT_SCREEN_LOADED, m_display);
 
 }
+void UI::showNotificationScreen(const char *title, const char *key, const char *body) {
+    // create once, afterwards only the texts are replaced
+    if (!ui_notifyScreen) {
+        ui_notifyScreen = lv_obj_create(NULL);
+        lv_obj_clear_flag(ui_notifyScreen, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_style_bg_color(ui_notifyScreen, lv_color_hex(0x000000), LV_PART_MAIN);
+        lv_obj_set_style_bg_opa(ui_notifyScreen, 255, LV_PART_MAIN);
+
+        // built-in montserrat fonts: they cover the whole printable ASCII range
+        ui_lblNotifyTitle = lv_label_create(ui_notifyScreen);
+        lv_obj_set_width(ui_lblNotifyTitle, 300);
+        lv_label_set_long_mode(ui_lblNotifyTitle, LV_LABEL_LONG_DOT);
+        lv_obj_set_height(ui_lblNotifyTitle, 18);
+        lv_obj_set_style_text_font(ui_lblNotifyTitle, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(ui_lblNotifyTitle, lv_color_hex(0xFFB000), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_align(ui_lblNotifyTitle, LV_ALIGN_TOP_LEFT, 10, 8);
+
+        ui_lblNotifyKey = lv_label_create(ui_notifyScreen);
+        lv_obj_set_width(ui_lblNotifyKey, 300);
+        lv_label_set_long_mode(ui_lblNotifyKey, LV_LABEL_LONG_DOT);
+        lv_obj_set_height(ui_lblNotifyKey, 32);
+        lv_obj_set_style_text_font(ui_lblNotifyKey, &lv_font_montserrat_28, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(ui_lblNotifyKey, lv_color_white(), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_align(ui_lblNotifyKey, LV_ALIGN_TOP_LEFT, 10, 30);
+
+        ui_lblNotifyBody = lv_label_create(ui_notifyScreen);
+        lv_obj_set_width(ui_lblNotifyBody, 300);
+        lv_label_set_long_mode(ui_lblNotifyBody, LV_LABEL_LONG_DOT);
+        lv_obj_set_height(ui_lblNotifyBody, 88);
+        lv_obj_set_style_text_font(ui_lblNotifyBody, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_color(ui_lblNotifyBody, lv_color_hex(0xD0D0D0), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_align(ui_lblNotifyBody, LV_ALIGN_TOP_LEFT, 10, 72);
+
+        lv_obj_add_event_cb(ui_notifyScreen, on_screen_loaded, LV_EVENT_SCREEN_LOADED, m_display);
+    }
+
+    lv_label_set_text(ui_lblNotifyTitle, title ? title : "");
+    lv_label_set_text(ui_lblNotifyKey, key ? key : "");
+    lv_label_set_text(ui_lblNotifyBody, body ? body : "");
+}
+
 void UI::createQRScreen(uint8_t *buf, int size) {
     if (!buf || size <= 0) {
         ESP_LOGE(TAG, "No QR to draw");

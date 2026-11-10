@@ -56,6 +56,7 @@ SRCS
     "./http_server/v2/handler_v2_dashboard.cpp"
     "./http_server/v2/handler_v2_settings.cpp"
     "./http_server/v2/handler_v2_identify.cpp"
+    "./http_server/v2/handler_v2_notify.cpp"
     "./http_server/v2/handler_v2_system.cpp"
     "./self_test/self_test.cpp"
     "./stratum/stratum_api.cpp"

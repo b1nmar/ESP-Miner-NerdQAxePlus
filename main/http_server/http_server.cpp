@@ -17,6 +17,7 @@
 #include "v2/handler_v2_dashboard.h"
 #include "v2/handler_v2_settings.h"
 #include "v2/handler_v2_identify.h"
+#include "v2/handler_v2_notify.h"
 #include "v2/handler_v2_system.h"
 #include "handler_system.h"
 #include "handler_wifi_scan.h"
@@ -237,6 +238,13 @@ esp_err_t start_rest_server(void * pvParameters)
     httpd_uri_t v2_identify_options = {
         .uri = "/api/v2/identify", .method = HTTP_OPTIONS, .handler = handle_options_request, .user_ctx = NULL};
     httpd_register_uri_handler(http_server, &v2_identify_options);
+
+    httpd_uri_t v2_notify_post = {
+        .uri = "/api/v2/notify", .method = HTTP_POST, .handler = POST_V2_notify, .user_ctx = rest_context};
+    httpd_register_uri_handler(http_server, &v2_notify_post);
+    httpd_uri_t v2_notify_options = {
+        .uri = "/api/v2/notify", .method = HTTP_OPTIONS, .handler = handle_options_request, .user_ctx = NULL};
+    httpd_register_uri_handler(http_server, &v2_notify_options);
 
     httpd_uri_t v2_system_get = {
         .uri = "/api/v2/system", .method = HTTP_GET, .handler = GET_V2_system, .user_ctx = rest_context};

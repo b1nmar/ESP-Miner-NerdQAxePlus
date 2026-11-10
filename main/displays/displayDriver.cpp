@@ -367,6 +367,11 @@ bool DisplayDriver::enterState(UiState s, int64_t now)
     case UiState::Identify:
         ESP_LOGI(TAG, "enter state identify (blink %lums)", m_identifyDuration_ms);
         break;
+    case UiState::Notification:
+        ESP_LOGI(TAG, "enter state notification (%lums)", m_notifyDuration_ms);
+        enableLvglAnimations(true);
+        safe_screen_change(m_ui->ui_notifyScreen, LV_SCR_LOAD_ANIM_FADE_ON, 300, 0);
+        break;
     case UiState::PowerOff:
         if (!m_ui->ui_PowerOffScreen) {
             m_ui->powerOffScreenInit();
@@ -468,6 +473,14 @@ void DisplayDriver::updateState(int64_t now, bool btn1Press, bool btn2Press, boo
             } else {
                 displayTurnOff();
             }
+        }
+        break;
+    case UiState::Notification:
+        if (btn1Press || btn2Press || (uint32_t) ms >= m_notifyDuration_ms) {
+            m_isActiveOverlay = false;
+            // restart the auto screen-off timer so the mining screen stays visible for a moment
+            m_lastKeypressTime = now;
+            enterState(UiState::Mining, now);
         }
         break;
     case UiState::PowerOff:
@@ -623,6 +636,33 @@ void DisplayDriver::handleUiQueueMessages(ui_msg_t &msg, int64_t tnow)
             m_isActiveOverlay = true;
             enterState(UiState::Identify, tnow);
             break;
+        case UI_CMD_NOTIFICATION: {
+            ui_notification_t *n = (ui_notification_t *) msg.payload;
+            if (!n) {
+                break;
+            }
+            // only interrupt the regular screens; never splash, portal, OTP enrollment or power off
+            const bool allowed = m_state == UiState::Mining || m_state == UiState::SettingsScreen ||
+                                 m_state == UiState::BTCScreen || m_state == UiState::GlobalStats ||
+                                 m_state == UiState::Identify || m_state == UiState::Notification;
+            if (!allowed) {
+                ESP_LOGW(TAG, "notification dropped, display busy (state %d)", (int) m_state);
+                break;
+            }
+            {
+                PThreadGuard lock(m_lvglMutex);
+                m_ui->showNotificationScreen(n->title, n->key, n->body);
+            }
+            if (!m_ui->ui_notifyScreen) {
+                break;
+            }
+            m_notifyDuration_ms = msg.param;
+            m_isActiveOverlay = true;
+            // a notification that replaces a visible one only restarts the timer
+            m_stateStart_us = tnow;
+            enterState(UiState::Notification, tnow);
+            break;
+        }
     }
 
     if (msg.payload) {

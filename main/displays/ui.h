@@ -83,6 +83,10 @@ protected:
     lv_obj_t *ui_lblmedFee = nullptr;
     lv_obj_t *ui_lblhighFee = nullptr;
     lv_obj_t *ui_qrScreen = nullptr;
+    lv_obj_t *ui_notifyScreen = nullptr;
+    lv_obj_t *ui_lblNotifyTitle = nullptr;
+    lv_obj_t *ui_lblNotifyKey = nullptr;
+    lv_obj_t *ui_lblNotifyBody = nullptr;
     lv_obj_t *ui_PowerOffScreen = nullptr;
     lv_obj_t* ui_imgNet = nullptr;
 
@@ -105,6 +109,9 @@ protected:
     // QR
     void createQRScreen(uint8_t *buf, int size);
     void destroyQRScreen();
+
+    // generic text notification
+    void showNotificationScreen(const char *title, const char *key, const char *body);
 
     // Generic theme overlays (device name, credits, donation QR)
     lv_color_t* m_splash_qr_buf = nullptr;
