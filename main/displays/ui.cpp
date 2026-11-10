@@ -770,7 +770,7 @@ void UI::globalStatsScreenInit(void)
 #define NOTIFY_T_END        1600
 #define NOTIFY_T_DELAY      (UI_NOTIFY_INTRO_MS - NOTIFY_T_END)
 
-static void notify_intro_anim_cb(void *var, int32_t v)
+void UI::notifyIntroAnimCb(void *var, int32_t v)
 {
     static_cast<UI *>(var)->notifyIntroStep(v);
 }
@@ -867,7 +867,7 @@ void UI::showNotificationScreen(const char *title, const char *key, const char *
     lv_label_set_text(ui_lblNotifyKey, key ? key : "");
     lv_label_set_text(ui_lblNotifyBody, body ? body : "");
 
-    lv_anim_del(this, notify_intro_anim_cb);
+    lv_anim_del(this, notifyIntroAnimCb);
     if (!with_intro) {
         notifyIntroStep(NOTIFY_T_END);
         return;
@@ -879,7 +879,7 @@ void UI::showNotificationScreen(const char *title, const char *key, const char *
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, this);
-    lv_anim_set_exec_cb(&a, notify_intro_anim_cb);
+    lv_anim_set_exec_cb(&a, notifyIntroAnimCb);
     lv_anim_set_values(&a, 0, NOTIFY_T_END);
     lv_anim_set_time(&a, NOTIFY_T_END);
     lv_anim_set_delay(&a, NOTIFY_T_DELAY);

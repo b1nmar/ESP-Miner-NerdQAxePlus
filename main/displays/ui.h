@@ -123,6 +123,7 @@ protected:
     // with_intro plays the logo animation before the text appears
     void showNotificationScreen(const char *title, const char *key, const char *body, bool with_intro);
     void notifyIntroStep(int32_t t_ms);
+    static void notifyIntroAnimCb(void *var, int32_t v);
 
     // Generic theme overlays (device name, credits, donation QR)
     lv_color_t* m_splash_qr_buf = nullptr;
